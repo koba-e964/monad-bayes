@@ -23,6 +23,9 @@ Portability : GHC
    #-}
 
 module Control.Monad.Bayes.Trace (
+  Trace,
+  PartialTrace,
+  shape,
   Traced,
   mapMonad,
   mhStep,
@@ -44,6 +47,19 @@ import Control.Monad.Trans.Class
 import Data.Maybe
 import Data.List
 import Safe (tailSafe)
+
+-- | Datatype representing traces of probabilistic programs.
+-- A trace is a collection of values for all random variables in the program,
+-- in the order as they appear in the program.
+-- Real-valued and integer-valued RVs are treated separately.
+-- Two traces have the same shape if the lengths of the corresponding lists are the same.
+type Trace m = ([CustomReal m], [Int])
+-- | Like `Trace`, but some of the values may be missing.
+type PartialTrace m = ([Maybe (CustomReal m)], [Maybe Int])
+
+-- | Shape of a `Trace` or `PartialTrace` is a tuple containing lengths of the relevent lists.
+shape :: ([a],[b]) -> (Int,Int)
+shape (xs,ys) = (length xs, length ys)
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same support.
