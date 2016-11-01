@@ -112,17 +112,17 @@ smcrm :: forall m a. MonadDist m =>
          Int -- ^ number of resampling points
          -> Int -- ^ number of MH transitions at each step
          -> Int -- ^ number of particles
-         -> Particle (Trace (Population m)) a -> Population m a
+         -> Particle (Traced (Population m)) a -> Population m a
 
 smcrm k s n = marginal . flatten . composeCopies k step . init
   where
   hoistC  = Particle.mapMonad
   hoistT  = Trace.mapMonad
 
-  init :: Particle (Trace (Population m)) a -> Particle (Trace (Population m)) a
+  init :: Particle (Traced (Population m)) a -> Particle (Traced (Population m)) a
   init = hoistC (hoistT (spawn n >>))
 
-  step :: Particle (Trace (Population m)) a -> Particle (Trace (Population m)) a
+  step :: Particle (Traced (Population m)) a -> Particle (Traced (Population m)) a
   step = advance . hoistC (composeCopies s mhStep . hoistT resample)
 
 -- | Importance Sampling with Metropolis-Hastings transitions.
@@ -131,14 +131,14 @@ smcrm k s n = marginal . flatten . composeCopies k step . init
 -- Can be seen as a precursor to Simulated Annealing.
 ismh :: MonadDist m => Int -- ^ number of MH transitions for each point
                     -> Int -- ^ population size
-                    -> Trace (Population m) a -> Population m a
+                    -> Traced (Population m) a -> Population m a
 ismh s n = marginal . composeCopies s mhStep . Trace.mapMonad (spawn n >>)
 
 -- | Sequential Metropolis-Hastings.
 -- Alternates several MH transitions with running the program another step forward.
 smh :: MonadBayes m => Int -- ^ number of suspension points
                     -> Int -- ^ number of MH transitions at each point
-                    -> Particle (Trace m) a -> m a
+                    -> Particle (Traced m) a -> m a
 smh k s = marginal . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep))
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
@@ -172,7 +172,7 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
 -- Beware that if the initial sample has zero likelihood, it is possible
 -- that all the samples produced have zero likelihood.
 traceMH :: MonadDist m => Int -- ^ number of samples produced
-                       -> Trace (WriterT [a] (Prior m)) a -> m [a]
+                       -> Traced (WriterT [a] (Prior m)) a -> m [a]
 traceMH n m = prior $ execWriterT $ marginal $ composeCopies (n-1) mhStep $ record m where
   record m = do
     x <- m
