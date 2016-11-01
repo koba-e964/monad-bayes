@@ -142,6 +142,10 @@ smh :: MonadBayes m => Int -- ^ number of suspension points
                     -> Particle (Traced m) a -> m a
 smh k s = marginal . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep))
 
+-- | Parameters of a Metropolis-Hastings algorithm.
+-- Currently just the number of transitions performed.
+type MHParam = Int
+
 type TransKernel = forall m. MonadBayes m => Trace (CustomReal m) -> m (Trace (CustomReal m))
 
 kernelProposal :: MonadDist m =>  TransKernel -> Trace (CustomReal m) -> m (Trace (CustomReal m))

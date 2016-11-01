@@ -33,9 +33,10 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Deterministic
+import Control.Monad.Bayes.Trace
 
 -- | A probability monad that allows conditioning on any subset of latent variables.
-newtype Conditional m a = Conditional (StateT ([Maybe (CustomReal m)], [Maybe Int]) m a)
+newtype Conditional m a = Conditional (StateT (PartialTrace (CustomReal m)) m a)
   deriving (Functor, Applicative, Monad)
 
 type instance CustomReal (Conditional m) = CustomReal m
@@ -70,7 +71,7 @@ instance MonadBayes m => MonadBayes (Conditional m) where
 -- For every fixed value its PDF is included as a `factor`.
 -- Discrete and continuous random variables are treated separately.
 -- Missing values are treated as no conditioning on that RV.
-conditional :: Monad m => Conditional m a -> ([Maybe (CustomReal m)], [Maybe Int]) -> m a
+conditional :: Monad m => Conditional m a -> PartialTrace (CustomReal m) -> m a
 conditional (Conditional m) = evalStateT m
 
 -- | Remove `Conditional` by conditioning on an empty subset of random variables.
@@ -82,12 +83,12 @@ unconditional (Conditional m) = evalStateT m ([],[])
 -- the trace times the (unnormalized) likelihood of the trace.
 -- Missing latent variables are integrated out using the transformed monad,
 -- unused values from the list are ignored.
-pseudoDensity :: MonadDist m => Conditional (Weighted m) a -> ([Maybe (CustomReal m)], [Maybe Int]) -> m (LogDomain (CustomReal m))
+pseudoDensity :: MonadDist m => Conditional (Weighted m) a -> PartialTrace (CustomReal m) -> m (LogDomain (CustomReal m))
 pseudoDensity m = fmap snd . runWeighted . conditional m
 
 -- | Joint density of all random variables in the program.
 -- Failure occurs when the lists are too short.
-jointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> ([r], [Int]) -> Maybe (LogDomain r)
+jointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> Trace r -> Maybe (LogDomain r)
 jointDensity m (xs,cs) = maybeDeterministic $ pseudoDensity m (map Just xs, map Just cs)
 
 -- | Like 'jointDensity', but assumes all random variables are continuous.
