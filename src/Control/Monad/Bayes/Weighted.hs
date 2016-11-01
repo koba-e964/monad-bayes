@@ -24,6 +24,7 @@ module Control.Monad.Bayes.Weighted (
     Weighted,
     withWeight,
     runWeighted,
+    discardWeight,
     resetWeight,
     mapMonad,
     WeightRecorder,
@@ -72,6 +73,10 @@ instance MonadDist m => MonadBayes (Weighted m) where
 -- | Obtain an explicit value of the likelihood for a given value.
 runWeighted :: MonadDist m => Weighted m a -> m (a, LogDomain (CustomReal m))
 runWeighted = fmap (second unWeight) . (`runStateT` 1) . toStateT
+
+-- | Discards the weight.
+discardWeight :: MonadDist m => Weighted m a -> m a
+discardWeight = fmap fst . runWeighted
 
 -- | Embed a random variable with explicitly given likelihood.
 --

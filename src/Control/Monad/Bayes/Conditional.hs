@@ -18,6 +18,7 @@ Portability : GHC
 module Control.Monad.Bayes.Conditional (
   Conditional,
   conditional,
+  unconditional,
   pseudoDensity,
   jointDensity,
   contJointDensity,
@@ -71,6 +72,10 @@ instance MonadBayes m => MonadBayes (Conditional m) where
 -- Missing values are treated as no conditioning on that RV.
 conditional :: Monad m => Conditional m a -> ([Maybe (CustomReal m)], [Maybe Int]) -> m a
 conditional (Conditional m) = evalStateT m
+
+-- | Remove `Conditional` by conditioning on an empty subset of random variables.
+unconditional :: Conditional m a -> m a
+unconditional (Conditional m) = evalStateT m ([],[])
 
 -- | Evaluates joint density of a subset of random variables.
 -- Specifically this is a product of conditional densities encountered in
