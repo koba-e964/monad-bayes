@@ -142,13 +142,13 @@ smh :: MonadBayes m => Int -- ^ number of suspension points
                     -> Particle (Traced m) a -> m a
 smh k s = marginal . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep))
 
-type TransKernel = forall m. MonadBayes m => Trace m -> m (Trace m)
+type TransKernel = forall m. MonadBayes m => Trace (CustomReal m) -> m (Trace (CustomReal m))
 
-kernelProposal :: MonadDist m =>  TransKernel -> Trace m -> m (Trace m)
+kernelProposal :: MonadDist m =>  TransKernel -> Trace (CustomReal m) -> m (Trace (CustomReal m))
 kernelProposal k x = discardWeight $ unconditional $ k x
 
-kernelDensity :: MonadDist m => TransKernel -> Trace m -> Trace m -> m (LogDomain (CustomReal m))
-kernelDensity k x y = fmap snd $ runWeighted $ conditional (k x) y
+kernelDensity :: MonadDist m => TransKernel -> Trace (CustomReal m) -> Trace (CustomReal m) -> m (LogDomain (CustomReal m))
+kernelDensity k x y = fmap snd $ runWeighted $ conditional (k x) (traceToPartial y)
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
