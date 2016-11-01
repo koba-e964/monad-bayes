@@ -48,6 +48,7 @@ import Control.Monad.Bayes.Trace    as Trace
 import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Prior
+import Control.Monad.Bayes.Conditional
 
 -- | Rejection sampling that proposes from the prior.
 -- The accept/reject decision is made for the whole program rather than
@@ -140,6 +141,14 @@ smh :: MonadBayes m => Int -- ^ number of suspension points
                     -> Int -- ^ number of MH transitions at each point
                     -> Particle (Traced m) a -> m a
 smh k s = marginal . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep))
+
+type TransKernel = forall m. MonadBayes m => Trace m -> m (Trace m)
+
+kernelProposal :: MonadDist m =>  TransKernel -> Trace m -> m (Trace m)
+kernelProposal k x = discardWeight $ unconditional $ k x
+
+kernelDensity :: MonadDist m => TransKernel -> Trace m -> Trace m -> m (LogDomain (CustomReal m))
+kernelDensity k x y = fmap snd $ runWeighted $ conditional (k x) y
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}

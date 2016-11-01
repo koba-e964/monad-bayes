@@ -74,7 +74,7 @@ conditional :: Monad m => Conditional m a -> ([Maybe (CustomReal m)], [Maybe Int
 conditional (Conditional m) = evalStateT m
 
 -- | Remove `Conditional` by conditioning on an empty subset of random variables.
-unconditional :: Conditional m a -> m a
+unconditional :: Monad m => Conditional m a -> m a
 unconditional (Conditional m) = evalStateT m ([],[])
 
 -- | Evaluates joint density of a subset of random variables.
